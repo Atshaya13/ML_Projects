@@ -1,0 +1,349 @@
+---
+title: "FML_Assignment3"
+author: "Atshaya Suresh"
+date: "2023-10-13"
+output:
+  pdf_document: default
+  html_document: default
+---
+***SUMMARY*** 
+
+1.Using the information in this dataset, if an accident has just been reported and no further information is available, what should the prediction be? (INJURY = Yes or No?) Why?
+
+**Ans)** Using the information from the dataset, if an accident has just been reported and no further information is available, the prediction is "INJURY = Yes". The reason behind this is that, P(INJURY = "Yes") = 0.50878 and P(INJURY = "No") = 0.49121. Since Probability of INJURY = "Yes" is greater than that of INJURY = "No", it is safe to predict the same. 
+
+2. Select the first 24 records in the dataset and look only at the response (INJURY) and the two predictors WEATHER_R and TRAF_CON_R. Create a pivot table that examines INJURY as a function of the two predictors for these 24 records. Use all three variables in the pivot table as rows/columns.
+
+**Ans)** The Pivot table is as follows: 
+Refer to Line 151 and 152 (Variables: dt1 and dt2)
+
+2.1 Compute the exact Bayes conditional probabilities of an injury (INJURY = Yes) given the six possible combinations of the predictors.
+
+**Ans)** Below are the probabilities: (Note: INJURY = Yes is I, WEATHER_R is W and TRAF_CON_R is T)
+P(I|W=1,T=0)= 0.666667
+P(I|W=1,T=1)= 0
+P(I|W=1,T=2)= 0
+P(I|W=2,T=0)= 0.1818182
+P(I|W=2,T=1)= 0
+P(I|W=2,T=2)= 1
+
+2.2 Classify the 24 accidents using these probabilities and a cutoff of 0.5.
+
+**Ans)** Refer to Line 154 for the classifications of the 24 accidents with a cut off of 0.5 from using the probabilities above. 
+
+Variable name: accidents24$prob_injury
+
+
+2.3 Compute manually the naive Bayes conditional probability of an injury given WEATHER_R = 1 and TRAF_CON_R = 1.
+
+**Ans)** The answer is 0. 
+
+2.4 Run a naive Bayes classifier on the 24 records and two predictors. Check the model output to obtain probabilities and classifications for all 24 records. Compare this to the exact Bayes classification. Are the resulting classifications equivalent? Is the ranking (= ordering) of observations equivalent?
+
+**Ans)** Refer to Line185 to Line224
+
+Dataset for reference: accidents24_sorted
+
+The probabilities of naives Bayes and exact Bayes are not equivalent and classifications possibly can not be equivalent for a cut off value of 0.5. However, there is a very high correlation in terms of their ranking. Except for 2 records, (3rd observation and 24th observation), after sorting the records in ascending order as per the prob_injury(exact Bayes value), the ranks of the observations are very similar or more or less equivalent. 
+
+3. Let us now return to the entire dataset. Partition the data into training (60%) and validation (40%). 
+
+**Ans)** The data is partitioned into 2 copies of 2 sets 
+(a)train.df(60%) and valid.df(40%)
+(b)training_set(60%) and validation_set(40%)
+
+The purpose of choosing 2 sets of training and validation sets is to differentiate how the dimensions taken into account for building a model influences the model itself.
+
+Method 1: We are using only a subset of the features which are, "INJURY", "HOUR_I_R", "ALIGN_I", "WRK_ZONE", "WKDY_I_R","INT_HWY", "LGTCON_I_R", "PROFIL_I_R", "SPD_LIM", "SUR_COND","TRAF_CON_R", "TRAF_WAY", "WEATHER_R". which is assumed to be relevant predictors for the target variable. 
+
+Method 2: We are using all the features except MAX_SEV_IR (which is classified as Yes/No in the INJURY column) and SPD_LIM (which is a numeric variable), since it is mentioned that, the predictors are categorical. 
+
+3.1 Run a naive Bayes classifier on the complete training set with the relevant predictors (and INJURY as the response). Note that all predictors are categorical. Show the confusion matrix.
+
+**Ans)** Method 1: Confusion Matrix
+```{r}
+Method_1 <- matrix(c(5574,6972,4829,7934), 
+             nrow = 2, byrow = TRUE)
+colnames(Method_1)<-c("Actual Yes", "Actual No")
+rownames(Method_1)<-c("Predicted Yes","Predicted No")
+tab<-as.table(Method_1)
+Method_1
+```
+
+Method 2: Confusion Matrix
+```{r}
+Method_2 <- matrix(c(9030,0,0,9310), 
+             nrow = 2, byrow = TRUE)
+colnames(Method_2)<-c("Actual Yes", "Actual No")
+rownames(Method_2)<-c("Predicted Yes","Predicted No")
+tab<-as.table(Method_2)
+Method_2
+```
+3.2 What is the overall error of the validation set?
+
+**Ans)** The overall errors are: 
+Method 1: 0.4663
+Method 2: 0
+
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+options(repos = "https://cran.stat.ucla.edu/")
+```
+
+**The file accidentsFull.csv contains information on 42,183 actual automobile accidents in 2001 in the United States that involved one of three levels of injury: NO INJURY, INJURY, or FATALITY. For each accident, additional information is recorded, such as day of week, weather conditions, and road type. A firm might be interested in developing a system for quickly classifying the severity of an accident based on initial reports and associated data in the system (some of which rely on GPS-assisted reporting).**
+ 
+
+Loading the necessary Packages and Libraries
+```{r}
+install.packages("e1071")
+install.packages("caret")
+install.packages("dplyr")
+```
+
+Importing the data 
+```{r}
+accidents <- read.csv("accidentsFull.csv")
+```
+
+
+**Our goal here is to predict whether an accident just reported will involve an injury (MAX_SEV_IR = 1 or 2) or will not (MAX_SEV_IR = 0). For this purpose, create a dummy variable called INJURY that takes the value “yes” if MAX_SEV_IR = 1 or 2, and otherwise “no.”**
+```{r}
+accidents$INJURY <-  ifelse(accidents$MAX_SEV_IR>0, "yes", "no")
+table(accidents$INJURY)
+```
+*** 
+
+**1. Using the information in this dataset, if an accident has just been reported and no further information is available, what should the prediction be? (INJURY = Yes or No?) Why?**
+
+```{r}
+p_yes <- mean(accidents$INJURY == "yes")
+p_no <- mean(accidents$INJURY == "no")
+p_yes
+p_no
+```
+
+Converting all the features except SPD_LIM to factor
+```{r}
+library(dplyr)
+accidents <- accidents %>%
+  mutate_at(vars(-SPD_LIM), as.factor)
+```
+***
+
+**Select the first 24 records in the dataset and look only at the response (INJURY) and the two predictors WEATHER_R and TRAF_CON_R. Create a pivot table that examines INJURY as a function of the two predictors for these 24 records. Use all three variables in the pivot table as rows/columns.**
+
+For getting the first 24 records from the Dataframe
+```{r}
+accidents24 <- accidents[1:24, c("INJURY", "WEATHER_R", "TRAF_CON_R")]
+```
+
+For Generating the Pivot Table
+```{r}
+dt1 <- ftable(accidents24)
+dt2 <- ftable(accidents24[,-1])
+dt1
+dt2 
+``` 
+*** 
+
+**2.1. Compute the exact Bayes conditional probabilities of an injury (INJURY = Yes) given the six possible combinations of the predictors.**
+
+For Bayes Conditional Probability (Consider only the last 6 probabilities)
+```{r}
+pn10 <- dt1[1,1]/dt2[1,1]
+pn11 <- dt1[1,2]/dt2[1,2]
+pn12 <- dt1[1,3]/dt2[1,3]
+pn20 <- dt1[2,1]/dt2[2,1]
+pn21 <- dt1[2,2]/dt2[2,2]
+pn22 <- dt1[2,3]/dt2[2,3]
+py10 <- dt1[3,1]/dt2[1,1]
+py11 <- dt1[3,2]/dt2[1,2]
+py12 <- dt1[3,3]/dt2[1,3]
+py20 <- dt1[4,1]/dt2[2,1]
+py21 <- dt1[4,2]/dt2[2,2]
+py22 <- dt1[4,3]/dt2[2,3]
+##P(Injury = No| Weather = 1, Traffic = 0)
+pn10
+##P(Injury = No| Weather = 1, Traffic = 1)
+pn11
+##P(Injury = No| Weather = 1, Traffic = 2)
+pn12
+##P(Injury = No| Weather = 2, Traffic = 0)
+pn20
+##P(Injury = No| Weather = 2, Traffic = 1)
+pn21
+##P(Injury = No| Weather = 2, Traffic = 2)
+pn22
+##P(Injury = Yes| Weather = 1, Traffic = 0)
+py10
+##P(Injury = Yes| Weather = 1, Traffic = 1)
+py11
+##P(Injury = Yes| Weather = 1, Traffic = 2)
+py12
+##P(Injury = Yes| Weather = 2, Traffic = 0)
+py20
+##P(Injury = Yes| Weather = 2, Traffic = 1)
+py21
+##P(Injury = Yes| Weather = 2, Traffic = 2)
+py22
+```
+
+**2.2. Classify the 24 accidents using these probabilities and a cutoff of 0.5.**
+```{r}
+install.packages("dplyr")
+library(dplyr)
+accidents24 <- accidents24 %>%
+  mutate(prob_injury = case_when(
+    WEATHER_R == 1 & TRAF_CON_R == 0 ~ py10,
+    WEATHER_R == 1 & TRAF_CON_R == 1 ~ py11,
+    WEATHER_R == 1 & TRAF_CON_R == 2 ~ py12,
+    WEATHER_R == 2 & TRAF_CON_R == 0 ~ py20,
+    WEATHER_R == 2 & TRAF_CON_R == 1 ~ py21,
+    WEATHER_R == 2 & TRAF_CON_R == 2 ~ py22,
+    TRUE ~ NA_real_  # default case if none of the above conditions are met
+  ))
+accidents24 <- accidents24 %>%
+  mutate(classification = if_else(prob_injury > 0.5, "Yes", "No"))
+accidents24
+```
+
+**2.3. Compute manually the naive Bayes conditional probability of an injury given WEATHER_R = 1 and TRAF_CON_R = 1.**
+
+Calculating Naive Bayes manually from the values: P(Injury=Yes|WEATHER_R=1,TRAF_CON_R=1)
+```{r}
+nbpy11 = ((6/9)*(0/9)*(9/24))/(((6/9)*(0/9)*(9/24))+((5/15)*(2/15)*(15/24)))
+nbpy11
+```
+
+**2.4. Run a naive Bayes classifier on the 24 records and two predictors. Check the model output to obtain probabilities and classifications for all 24 records. Compare this to the exact Bayes classification. Are the resulting classifications equivalent? Is the ranking (= ordering) of observations equivalent?**
+
+```{r}
+install.packages("e1071")
+library(e1071)
+nb <- naiveBayes(INJURY ~ TRAF_CON_R + WEATHER_R, 
+                 data = accidents24)
+nbt <- predict(nb, newdata = accidents24,type = "raw")
+nbt
+accidents24$nbpred.prob <- nbt[,2] # Transfer the "Yes" nb prediction
+```
+
+Another method: Let us use Caret
+```{r}
+install.packages("caret")
+library(caret)
+nb2 <- train(INJURY ~ TRAF_CON_R + WEATHER_R, 
+      data = accidents24, method = "nb")
+
+predict(nb2, newdata = accidents24[,c("INJURY", "WEATHER_R", "TRAF_CON_R")])
+predict(nb2, newdata = accidents24[,c("INJURY", "WEATHER_R", "TRAF_CON_R")],
+                                    type = "raw")
+```
+```{r}
+#For confusion matrix
+# Predictions
+predicted_values <- predict(nb2, newdata = accidents24[,c("INJURY", "WEATHER_R", "TRAF_CON_R")])
+
+# Confusion Matrix
+conf_mat <- confusionMatrix(predicted_values, accidents24$INJURY)
+
+# Display the confusion matrix
+conf_mat
+
+```
+
+From the below results: Except for the 3rd observation and 24th observation, the rank ordering is same. 
+```{r}
+library(dplyr)
+accidents24_sorted <- accidents24 %>% arrange(prob_injury)
+accidents24_sorted
+```
+*** 
+
+**3. Let us now return to the entire dataset. Partition the data into training (60%) and validation (40%).Run a naive Bayes classifier on the complete training set with the relevant predictors (and INJURY as the response). Note that all predictors are categorical. Show the confusion matrix. What is the overall error of the validation set?**
+
+Here, we are trying 2 methods to apply the naive Bayes Classifier. 
+
+Method 1: Done with only a subset of the dimensions that are associated with the target variable
+```{r}
+# Install and load necessary packages
+install.packages(c("naivebayes", "caret"))
+library(naivebayes)
+library(caret)
+
+# Set seed for reproducibility
+set.seed(22)
+
+# Splitting the data into training and validation datasets
+train.index <- sample(c(1:dim(accidents)[1]), dim(accidents)[1]*0.6)
+train.df <- accidents[train.index,]
+valid.df <- accidents[-train.index,]
+
+# Specifying the variables for the model
+vars <- c("INJURY", "HOUR_I_R", "ALIGN_I", "WRK_ZONE", "WKDY_I_R",
+          "INT_HWY", "LGTCON_I_R", "PROFIL_I_R", "SPD_LIM", "SUR_COND",
+          "TRAF_CON_R", "TRAF_WAY", "WEATHER_R")
+
+# Training the Naive Bayes classifier
+nbTotal <- naive_bayes(INJURY ~ ., data = train.df[,vars])
+
+# Generate and display the confusion matrix for training data
+confusion_matrix_result <- confusionMatrix(train.df$INJURY, predict(nbTotal, train.df[, vars]), positive = "yes")
+print(confusion_matrix_result)
+
+```
+
+Method 2: Done with all of the dimensions that are associated with the target variable except MAX__SEV_IR and SPD_LIM
+```{r}
+library(dplyr)
+
+# Removing the MAX_SEV_IR column
+accidents <- accidents %>% select(-MAX_SEV_IR)
+accidents <- accidents %>% select(-SPD_LIM)
+
+# Checking the structure to ensure the column has been removed
+str(accidents)
+
+
+
+#Splitting the data into 60% Training and 40% Validation set
+install.packages("caTools")
+library(caTools)
+set.seed(1)
+split <- sample.split(accidents, SplitRatio = 0.6)
+training_set <- subset(accidents, split == TRUE)
+validation_set <- subset(accidents, split == FALSE)
+
+
+# 1. Install and load necessary packages
+install.packages("naivebayes")
+library(naivebayes)
+
+# 2. Train a Naive Bayes classifier
+# Assuming all columns except 'INJURY' are predictors and 'INJURY' is the response variable
+model <- naive_bayes(INJURY ~ ., data = training_set)
+
+# 3. Predict using the validation set
+predictions <- predict(model, validation_set)
+
+# 4. Produce the confusion matrix
+confusion_mtx <- table(Predicted = predictions, Actual = validation_set$INJURY)
+print(confusion_mtx)
+# 5. Calculate the overall error
+overall_error <- 1 - sum(diag(confusion_mtx)) / sum(confusion_mtx)
+print(overall_error)
+```
+
+
+
+
+
+
+
+
+
