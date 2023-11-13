@@ -1,0 +1,295 @@
+---
+title: "FML_4"
+author: "Atshaya Suresh"
+date: "2023-11-12"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r}
+# Choose a CRAN mirror URL from https://cran.r-project.org/mirrors.html
+# Replace 'https://cran.r-project.org/' with the URL of your chosen mirror
+cran_mirror <- 'https://cran.r-project.org/'
+
+# Set the CRAN mirror
+options(repos = structure(c(CRAN = cran_mirror)))
+```
+
+***Questions*** 
+
+1. Use only the numerical variables (1 to 9) to cluster the 21 firms. Justify the various choices made in conducting the cluster analysis, such as weights for different variables, the specific clustering algorithm(s) used, the number of clusters formed, and so on. 
+
+*Ans)* The numeric variables used in the algorithm are: "Market_Cap", "Beta", "PE_Ratio", "ROE", "ROA", "Asset_Turnover","Leverage", "Rev_Growth", "Net_Profit_Margin". 
+
+**Choice of Algorithm:** K-means clustering is chosen for its simplicity and ease of implementation. It partitions the data into 'k' clusters based on similarity. The number of clusters (k) is a parameter that should be chosen based on the characteristics of the data or through techniques like the elbow method.Although DBSCAN clustering was conducted, it did not render any meaningful clusters for various "eps" and "minPts".Even though it formed a number of clusters, the reason why DBSCAN could not form meaningful clusters is that, the data is pretty noisy. Hence, K-means Clustering is chosen. Also, one of the main reasons for not choosing Hierarchical clustering is that, if a data point is placed in any cluster, there is no means to change the cluster. 
+
+**Number of Clusters:** The number of clusters chosen is 3. Computationally, the optimal number of Clusters is 9. However, from the elbow method we can observe that, the WSS drops close to 3 clusters. Further, when we choose the number of clusters as 9, there are many clusters with very less elements which makes the clustering noisy. Hence, the number of clusters is chosen to be 3. 
+
+**Standardization:** The numerical variables are standardized using the scale function to ensure that all variables contribute equally to the clustering process. Standardization is crucial when using distance-based algorithms like k-means. 
+
+**Random Seed:** Setting the seed (set.seed(123)) ensures reproducibility. If we run the analysis again with the same seed, we should get the same results. 
+
+**Weights for different Variables:**In k-means clustering, the algorithm does not inherently consider variable weights. All variables are treated equally in terms of their contribution to the computation of distances between data points. However, if we have domain knowledge suggesting that certain variables are more important than others, we might consider adjusting the weights manually before clustering. This is often done by scaling or transforming the variables.We can also use Dimentionality reduction methods like Lasso or Ridge methods to evaluate which variables are important to assign weights.  
+
+
+2. Interpret the clusters with respect to the numerical variables used in forming the clusters. Is there a pattern in the clusters with respect to the numerical variables (10 to 12)? (those not used in forming the clusters) 
+
+
+*Ans)*Cluster Interpretation: With respect to the Numerical Variables 
+
+
+**Cluster 1:** 
+
+Market_Cap: Low 
+
+Beta: Moderate 
+
+PE_Ratio: High 
+
+ROE: Low 
+
+ROA: Low 
+
+Asset_Turnover: Around the mean 
+
+Leverage: Low 
+
+Rev_Growth: Positive 
+
+Net_Profit_Margin: Low 
+
+
+
+**Cluster 2:** 
+
+Market_Cap: Moderate to High 
+
+Beta: Moderate 
+
+PE_Ratio: Low to Moderate 
+
+ROE: Moderate to High 
+
+ROA: Moderate to High 
+
+Asset_Turnover: Positive (around the mean or higher) 
+
+Leverage: Low to Moderate 
+
+Rev_Growth: Negative to Positive 
+
+Net_Profit_Margin: Moderate  
+
+
+
+**Cluster 3:** 
+
+Market_Cap: Low to Moderate 
+
+Beta: High 
+
+PE_Ratio: Low to Moderate 
+
+ROE: Low to Moderate 
+
+ROA: Low to Moderate 
+
+Asset_Turnover: Negative (below the mean) 
+
+Leverage: Moderate to High 
+
+Rev_Growth: Positive 
+
+Net_Profit_Margin: Low to Moderate 
+
+
+
+Analyzing the additional features (Median_Recommendation, Location, Exchange) for each cluster and see if there are any patterns or commonalities within each cluster: 
+
+
+**Cluster 1:**
+Median_Recommendation: Mix of recommendations (Moderate Buy, Hold, Moderate Sell)
+Location: Canada, UK, France, US
+Exchange: NYSE
+Interpretation: This cluster seems to have a diverse set of recommendations, with a presence in different countries. All firms are listed on the NYSE. 
+
+
+**Cluster 2:**
+Median_Recommendation: Mix of recommendations (Moderate Buy, Moderate Sell, Hold)
+Location: US, UK, Switzerland
+Exchange: NYSE
+Interpretation: Similar to Cluster 1, this cluster has a mix of recommendations and a global presence. All firms are listed on the NYSE. 
+
+
+**Cluster 3:**
+Median_Recommendation: Mix of recommendations (Hold, Moderate Buy, Moderate Sell)
+Location: Germany, US, Ireland
+Exchange: NYSE, NASDAQ, AMEX
+Interpretation: This cluster also has a mix of recommendations and a presence in different countries. Firms are listed on various exchanges, including NYSE, NASDAQ, and AMEX.
+Observations: 
+
+
+Clusters 1 and 2 share similarities in having a mix of recommendations and a global presence, primarily on the NYSE.
+Cluster 3, while also having a mix of recommendations, shows a wider variety of exchange listings, including NYSE, NASDAQ, and AMEX.
+It appears that there is some consistency in the types of recommendations across clusters, but the diversity of locations and exchanges indicates that the clustering is not solely based on these features. The financial metrics used for clustering captures underlying patterns that are not directly reflected in the location, exchange, or median recommendations.
+
+
+
+3. Provide an appropriate name for each cluster using any or all of the variables in the dataset. 
+
+
+*Ans)* **Cluster 1: "Stable Performers"**
+This cluster seems to consist of firms with lower market capitalization, moderate risk (Beta), high Price/Earnings ratio, lower return metrics (ROE and ROA), and a mix of positive revenue growth and lower net profit margins. 
+
+
+**Cluster 2: "Balanced Performers"**
+This cluster includes firms with moderate to high market capitalization, moderate risk, a balanced combination of financial metrics (moderate to high ROE and ROA), positive asset turnover, and a mix of negative to positive revenue growth and moderate net profit margins. 
+
+
+**Cluster 3: "High-Risk, High-Reward"**
+Firms in this cluster exhibit a combination of lower to moderate market capitalization, higher risk (high Beta), low to moderate Price/Earnings ratio, lower return metrics, negative asset turnover, and higher leverage. The firms may have positive revenue growth but lower net profit margins. 
+
+
+***
+
+```{r}
+p.df <- read.csv("Pharmaceuticals.csv")
+str(p.df)
+numeric.df <- p.df[, c("Market_Cap", "Beta", "PE_Ratio", "ROE", "ROA", "Asset_Turnover",
+                    "Leverage", "Rev_Growth", "Net_Profit_Margin")]
+numeric.df
+```
+```{r}
+numeric_std <- scale(numeric.df)
+```
+```{r}
+library(cluster)
+
+# K-means clustering
+set.seed(123)  # Set seed for reproducibility
+num_clusters <- 3  # You can adjust this based on your analysis
+
+# Perform k-means clustering
+kmeans_model <- kmeans(numeric_std, centers = num_clusters, nstart = 10)
+
+# Add cluster assignments to the original dataframe
+p.df$cluster <- as.factor(kmeans_model$cluster)
+
+# Print the cluster assignments
+print(p.df$cluster)
+
+# Summary of the cluster centers
+print(kmeans_model$centers)
+```
+```{r}
+install.packages("factoextra")
+# Load necessary libraries for visualization
+library(ggplot2)
+library(factoextra)
+
+# Cluster plot
+fviz_cluster(kmeans_model, data = numeric_std,
+             geom = "point", 
+             stand = FALSE, 
+             frame.type = "norm") +
+  ggtitle("K-means Clustering of Pharmaceutical Firms") +
+  theme_minimal()
+
+# Elbow method plot
+wss <- numeric(10)
+for (i in 1:10) {
+  kmeans_model <- kmeans(numeric_std, centers = i, nstart = 10)
+  wss[i] <- sum(kmeans_model$withinss)
+}
+
+elbow_plot <- ggplot() +
+  geom_point(aes(x = 1:10, y = wss), color = "blue", size = 2) +
+  geom_line(aes(x = 1:10, y = wss), color = "red", size = 1) +
+  labs(title = "Elbow Method for Optimal K",
+       x = "Number of Clusters (K)",
+       y = "Within-cluster Sum of Squares (WSS)") +
+  theme_minimal()
+
+# Print the plots
+print(elbow_plot)
+
+```
+```{r}
+# Load necessary libraries
+library(cluster)
+library(ggplot2)
+
+#numeric_std is your standardized data
+wss <- numeric(10)  # Initialize a vector to store within-cluster sum of squares
+
+# Iterate through different values of k (number of clusters)
+for (i in 1:10) {
+  kmeans_model <- kmeans(numeric_std, centers = i, nstart = 10)
+  wss[i] <- sum(kmeans_model$withinss)
+}
+
+# Create an elbow plot
+elbow_plot <- ggplot() +
+  geom_point(aes(x = 1:10, y = wss), color = "blue", size = 2) +
+  geom_line(aes(x = 1:10, y = wss), color = "red", size = 1) +
+  labs(title = "Elbow Method for Optimal K",
+       x = "Number of Clusters (K)",
+       y = "Within-cluster Sum of Squares (WSS)") +
+  theme_minimal()
+
+# Print the elbow plot
+print(elbow_plot)
+
+# Find the optimal K (number of clusters) programmatically
+optimal_k <- which(diff(wss) == max(diff(wss))) + 1
+cat("Optimal K (number of clusters):", optimal_k, "\n")
+
+```
+
+```{r}
+# Install the dbscan package
+install.packages("dbscan")
+
+# Load the dbscan package
+library(dbscan)
+
+# Assuming we have already loaded the necessary libraries
+library(cluster)
+
+# DBSCAN clustering
+dbscan_model <- dbscan(numeric_std, eps = 2.4, minPts = 2)
+
+# Add cluster assignments to the original dataframe
+p.df$cluster_dbscan <- as.factor(dbscan_model$cluster)
+
+# Print the DBSCAN cluster assignments
+print(p.df$cluster_dbscan)
+
+# Summary of the DBSCAN clusters
+print(table(p.df$cluster_dbscan))
+
+```
+
+
+```{r}
+# Load necessary libraries for visualization
+library(factoextra)
+
+# Visualize DBSCAN clusters
+fviz_cluster(dbscan_model, data = numeric_std,
+             geom = "point", 
+             stand = FALSE, 
+             frame.type = "norm") +
+  ggtitle("DBSCAN Clustering of Pharmaceutical Firms") +
+  theme_minimal()
+
+```
+
+
+
+
+
