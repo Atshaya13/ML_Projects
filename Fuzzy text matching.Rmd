@@ -1,0 +1,51 @@
+---
+title: "Untitled"
+author: "Atshaya Suresh"
+date: "2024-02-06"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+ro <- read.csv("UPC.csv")
+class(ro$Product)
+nrow(ro)
+sum(is.na(ro$Product))
+unique(ro$Product)
+```
+```{r}
+install.packages("stringdist")
+install.packages("dplyr")
+# Load required libraries
+library(stringdist)
+library(dplyr)
+
+grocery_items <- ro$Product
+# Function to classify items based on similarity including quantities
+classify_items <- function(items, threshold = 0.3) {
+  n <- length(items)
+  item_names <- gsub("\\d+oz\\s", "", items)  # Remove quantities from item names
+  similarity_matrix <- stringdistmatrix(item_names, item_names, method = "jaccard")
+  classified <- vector("list", n)
+  for (i in 1:n) {
+    similar_indices <- which(similarity_matrix[i, ] <= threshold & similarity_matrix[i, ] > 0)
+    classified[[i]] <- items[similar_indices]
+  }
+  return(classified)
+}
+
+# Classify grocery items
+classified_items <- classify_items(grocery_items, threshold = 0.2)
+
+# Display the classified items
+for (i in 1:length(classified_items)) {
+  cat("Class", i, ": ", toString(classified_items[[i]]), "\n")
+}
+
+
+```
+
+
